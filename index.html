@@ -2083,8 +2083,7 @@
             color: var(--text-tertiary);
         }
 
-        .editor-input-grid input,
-        .editor-input-grid select {
+        .editor-input-grid input {
             width: 100%;
             min-width: 0;
             box-sizing: border-box;
@@ -2095,6 +2094,20 @@
             padding: 6px 8px;
             font-size: 11px;
             font-family: Consolas, Monaco, monospace;
+        }
+
+        .editor-checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-secondary);
+            font-size: 11px;
+        }
+
+        .editor-checkbox-row input {
+            width: 14px;
+            height: 14px;
+            accent-color: var(--accent);
         }
 
         .pose-mode-tabs {
@@ -3300,14 +3313,11 @@
                         <input id="child-joint-name" value="" aria-label="Child joint name" />
                         <label for="child-link-name">link name</label>
                         <input id="child-link-name" value="" aria-label="Child link name" />
-                        <label for="child-visual-placeholder">visual</label>
-                        <select id="child-visual-placeholder" aria-label="Child visual placeholder">
-                            <option value="none">none</option>
-                            <option value="box" selected>box</option>
-                            <option value="cylinder">cylinder</option>
-                            <option value="sphere">sphere</option>
-                        </select>
                     </div>
+                    <label class="editor-checkbox-row">
+                        <input type="checkbox" id="child-add-visual-marker" checked />
+                        <span>Add visual marker (+X cylinder)</span>
+                    </label>
                     <div class="pose-mode-tabs">
                         <button class="pose-mode-btn active" id="child-pose-direct-btn" data-pose-target="child" data-pose-mode="direct">Direct pose</button>
                         <button class="pose-mode-btn" id="child-pose-guided-btn" data-pose-target="child" data-pose-mode="guided">Guided pose</button>
@@ -3347,15 +3357,10 @@
                     </div>
                     <button class="editor-action-btn primary" id="add-child-link-btn" disabled>Add child link</button>
                     <div class="editor-section-title">Add TCP link</div>
-                    <div class="editor-input-grid">
-                        <label for="tcp-visual-placeholder">visual</label>
-                        <select id="tcp-visual-placeholder" aria-label="TCP visual placeholder">
-                            <option value="none">none</option>
-                            <option value="box">box</option>
-                            <option value="cylinder">cylinder</option>
-                            <option value="sphere" selected>sphere</option>
-                        </select>
-                    </div>
+                    <label class="editor-checkbox-row">
+                        <input type="checkbox" id="tcp-add-visual-marker" />
+                        <span>Add visual marker (sphere)</span>
+                    </label>
                     <div class="pose-mode-tabs">
                         <button class="pose-mode-btn active" id="tcp-pose-direct-btn" data-pose-target="tcp" data-pose-mode="direct">Direct pose</button>
                         <button class="pose-mode-btn" id="tcp-pose-guided-btn" data-pose-target="tcp" data-pose-mode="guided">Guided pose</button>

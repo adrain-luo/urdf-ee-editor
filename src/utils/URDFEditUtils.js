@@ -119,33 +119,46 @@ export class URDFEditUtils {
         return parts.join(' ');
     }
 
+    static appendMarkerMaterial(doc, visualEl) {
+        const materialEl = doc.createElement('material');
+        materialEl.setAttribute('name', 'editor_marker_blue');
+
+        const colorEl = doc.createElement('color');
+        colorEl.setAttribute('rgba', '0.1 0.45 1.0 0.8');
+
+        materialEl.appendChild(colorEl);
+        visualEl.appendChild(materialEl);
+    }
+
     static appendVisualPlaceholder(doc, linkEl, type = 'none') {
         const visualType = String(type || 'none').toLowerCase();
-        if (visualType === 'none') {
+        if (visualType === 'none' || visualType === 'false') {
             return;
         }
 
-        const supported = new Set(['box', 'cylinder', 'sphere']);
+        const supported = new Set(['box', 'cylinder', 'sphere', 'child-marker', 'tcp-marker']);
         if (!supported.has(visualType)) {
             throw new Error(`Unsupported visual placeholder: ${type}`);
         }
 
         const visualEl = doc.createElement('visual');
+        visualEl.setAttribute('name', 'editor_marker_visual');
         const originEl = doc.createElement('origin');
-        originEl.setAttribute('xyz', '0 0 0');
-        originEl.setAttribute('rpy', visualType === 'cylinder' ? '0 1.57079632679 0' : '0 0 0');
+        const markerType = visualType === 'child-marker' ? 'cylinder' : visualType === 'tcp-marker' ? 'sphere' : visualType;
+        originEl.setAttribute('xyz', markerType === 'cylinder' ? '0.06 0 0' : '0 0 0');
+        originEl.setAttribute('rpy', markerType === 'cylinder' ? '0 1.57079632679 0' : '0 0 0');
 
         const geometryEl = doc.createElement('geometry');
-        if (visualType === 'box') {
+        if (markerType === 'box') {
             const boxEl = doc.createElement('box');
             boxEl.setAttribute('size', '0.04 0.04 0.04');
             geometryEl.appendChild(boxEl);
-        } else if (visualType === 'cylinder') {
+        } else if (markerType === 'cylinder') {
             const cylinderEl = doc.createElement('cylinder');
-            cylinderEl.setAttribute('radius', '0.012');
-            cylinderEl.setAttribute('length', '0.06');
+            cylinderEl.setAttribute('radius', '0.018');
+            cylinderEl.setAttribute('length', '0.12');
             geometryEl.appendChild(cylinderEl);
-        } else if (visualType === 'sphere') {
+        } else if (markerType === 'sphere') {
             const sphereEl = doc.createElement('sphere');
             sphereEl.setAttribute('radius', '0.012');
             geometryEl.appendChild(sphereEl);
@@ -153,6 +166,7 @@ export class URDFEditUtils {
 
         visualEl.appendChild(originEl);
         visualEl.appendChild(geometryEl);
+        this.appendMarkerMaterial(doc, visualEl);
         linkEl.appendChild(visualEl);
     }
 
@@ -211,7 +225,8 @@ export class URDFEditUtils {
 
         const xyz = this.assertTriplet(options.xyz || '0 0 0', 'Origin xyz');
         const rpy = this.assertTriplet(options.rpy || '0 0 0', 'Origin rpy');
-        const visualPlaceholder = options.visualPlaceholder || 'box';
+        const addVisualMarker = options.addVisualMarker !== false;
+        const visualPlaceholder = addVisualMarker ? (options.visualPlaceholder || 'child-marker') : 'none';
 
         this.appendFixedChildLink(doc, robot, parentLinkName, jointName, childLinkName, xyz, rpy, visualPlaceholder);
 
@@ -235,7 +250,8 @@ export class URDFEditUtils {
         const jointName = this.makeUniqueName(options.jointName || `${parentLinkName}_to_${tcpLinkName}`, jointNames);
         const xyz = this.assertTriplet(options.xyz || '0 0 0', 'TCP xyz');
         const rpy = this.assertTriplet(options.rpy || '0 0 0', 'TCP rpy');
-        const visualPlaceholder = options.visualPlaceholder || 'sphere';
+        const addVisualMarker = options.addVisualMarker === true;
+        const visualPlaceholder = addVisualMarker ? (options.visualPlaceholder || 'tcp-marker') : 'none';
 
         this.appendFixedChildLink(doc, robot, parentLinkName, jointName, tcpLinkName, xyz, rpy, visualPlaceholder);
 
