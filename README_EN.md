@@ -149,6 +149,63 @@ pnpm run build
 
 The build output is written to `dist/`.
 
+## Deployment
+
+This project can be deployed as a pure static website. After `pnpm run build`, the generated `dist/` directory contains static files that can be hosted without a Node.js server.
+
+Static deployment notes:
+
+- `vite.config.js` currently uses `base: './'`, which works for GitHub Pages repository subpaths such as `/urdf-ee-editor/` and also works well on Vercel.
+- The runtime does not depend on `127.0.0.1`, local absolute paths, or `C:/Users/...`.
+- Drag-and-drop URDF folder import uses the browser File API. Mesh files are read from user-selected local files through `URL.createObjectURL`, so no server-side filesystem access is required.
+- Do not commit `node_modules/`, `dist/`, or large robot sample folders such as `g1_d_description/`, unless they are explicitly managed as sample data later.
+- Advanced upstream features such as USD / MuJoCo may require COOP/COEP response headers. The URDF + STL import path, end-effector trimming, fixed/TCP link insertion, and URDF export do not depend on those headers.
+
+### Recommended: Vercel
+
+Vercel is the recommended deployment target because it is straightforward for Vite static sites and does not require committing `dist/`.
+
+Vercel settings:
+
+- Framework Preset: `Vite`
+- Install Command: `pnpm install --frozen-lockfile`
+- Build Command: `pnpm run build`
+- Output Directory: `dist`
+
+Deployment flow:
+
+1. Import the repository into Vercel.
+2. Keep the default Vite settings or use the settings above.
+3. Open the deployed Vercel URL.
+4. Drag in a local URDF description folder and verify import.
+
+### GitHub Pages
+
+GitHub Pages can also host the app. Because the current config uses `base: './'`, built assets load correctly under the repository subpath.
+
+Use GitHub Actions to build and publish `dist/`; do not commit `dist/` to the main branch.
+
+Typical flow:
+
+1. In GitHub repository Settings -> Pages, choose GitHub Actions as the source.
+2. Add a Pages workflow that runs:
+   - `pnpm install --frozen-lockfile`
+   - `pnpm run build`
+   - uploads `dist/` as the Pages artifact
+3. Open:
+
+```text
+https://<username>.github.io/urdf-ee-editor/
+```
+
+If the project later prefers an absolute repository base path, this can also be used:
+
+```js
+base: '/urdf-ee-editor/'
+```
+
+The current `base: './'` is more flexible for GitHub Pages, Vercel, static file servers, and local previews.
+
 ## Suggested Local Tests
 
 Basic regression:
