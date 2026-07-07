@@ -119,9 +119,47 @@ export class URDFEditUtils {
         return parts.join(' ');
     }
 
-    static appendFixedChildLink(doc, robot, parentLinkName, jointName, childLinkName, xyz, rpy) {
+    static appendVisualPlaceholder(doc, linkEl, type = 'none') {
+        const visualType = String(type || 'none').toLowerCase();
+        if (visualType === 'none') {
+            return;
+        }
+
+        const supported = new Set(['box', 'cylinder', 'sphere']);
+        if (!supported.has(visualType)) {
+            throw new Error(`Unsupported visual placeholder: ${type}`);
+        }
+
+        const visualEl = doc.createElement('visual');
+        const originEl = doc.createElement('origin');
+        originEl.setAttribute('xyz', '0 0 0');
+        originEl.setAttribute('rpy', visualType === 'cylinder' ? '0 1.57079632679 0' : '0 0 0');
+
+        const geometryEl = doc.createElement('geometry');
+        if (visualType === 'box') {
+            const boxEl = doc.createElement('box');
+            boxEl.setAttribute('size', '0.04 0.04 0.04');
+            geometryEl.appendChild(boxEl);
+        } else if (visualType === 'cylinder') {
+            const cylinderEl = doc.createElement('cylinder');
+            cylinderEl.setAttribute('radius', '0.012');
+            cylinderEl.setAttribute('length', '0.06');
+            geometryEl.appendChild(cylinderEl);
+        } else if (visualType === 'sphere') {
+            const sphereEl = doc.createElement('sphere');
+            sphereEl.setAttribute('radius', '0.012');
+            geometryEl.appendChild(sphereEl);
+        }
+
+        visualEl.appendChild(originEl);
+        visualEl.appendChild(geometryEl);
+        linkEl.appendChild(visualEl);
+    }
+
+    static appendFixedChildLink(doc, robot, parentLinkName, jointName, childLinkName, xyz, rpy, visualPlaceholder = 'none') {
         const linkEl = doc.createElement('link');
         linkEl.setAttribute('name', childLinkName);
+        this.appendVisualPlaceholder(doc, linkEl, visualPlaceholder);
 
         const jointEl = doc.createElement('joint');
         jointEl.setAttribute('name', jointName);
@@ -173,8 +211,9 @@ export class URDFEditUtils {
 
         const xyz = this.assertTriplet(options.xyz || '0 0 0', 'Origin xyz');
         const rpy = this.assertTriplet(options.rpy || '0 0 0', 'Origin rpy');
+        const visualPlaceholder = options.visualPlaceholder || 'box';
 
-        this.appendFixedChildLink(doc, robot, parentLinkName, jointName, childLinkName, xyz, rpy);
+        this.appendFixedChildLink(doc, robot, parentLinkName, jointName, childLinkName, xyz, rpy, visualPlaceholder);
 
         return {
             xml: this.serializeFormatted(doc, xmlContent),
@@ -196,8 +235,9 @@ export class URDFEditUtils {
         const jointName = this.makeUniqueName(options.jointName || `${parentLinkName}_to_${tcpLinkName}`, jointNames);
         const xyz = this.assertTriplet(options.xyz || '0 0 0', 'TCP xyz');
         const rpy = this.assertTriplet(options.rpy || '0 0 0', 'TCP rpy');
+        const visualPlaceholder = options.visualPlaceholder || 'sphere';
 
-        this.appendFixedChildLink(doc, robot, parentLinkName, jointName, tcpLinkName, xyz, rpy);
+        this.appendFixedChildLink(doc, robot, parentLinkName, jointName, tcpLinkName, xyz, rpy, visualPlaceholder);
 
         return {
             xml: this.serializeFormatted(doc, xmlContent),

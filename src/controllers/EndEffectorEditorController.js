@@ -599,9 +599,10 @@ export class EndEffectorEditorController {
     readChildLinkInputs() {
         const jointName = document.getElementById('child-joint-name')?.value?.trim() || '';
         const linkName = document.getElementById('child-link-name')?.value?.trim() || '';
+        const visualPlaceholder = document.getElementById('child-visual-placeholder')?.value || 'box';
         const origin = this.readTripletInputs('child-origin-xyz', 'child-origin-rpy', 'Child link origin');
 
-        return { jointName, linkName, ...origin };
+        return { jointName, linkName, visualPlaceholder, ...origin };
     }
 
     async addChildLink() {
@@ -618,7 +619,7 @@ export class EndEffectorEditorController {
             this.resetDeleteConfirmation();
             this.pendingSelectLinkName = result.linkName;
             await this.codeEditorManager.replaceContentAndReload(result.xml);
-            this.setStatus(`Added child link ${result.linkName} via fixed joint ${result.jointName}.`, 'success');
+            this.setStatus(`Added child link ${result.linkName} via fixed joint ${result.jointName} with ${inputs.visualPlaceholder} visual.`, 'success');
         } catch (error) {
             this.pendingSelectLinkName = null;
             this.setStatus(error.message, 'error');
@@ -635,11 +636,12 @@ export class EndEffectorEditorController {
 
         try {
             const origin = this.readTCPOriginInputs();
-            const result = URDFEditUtils.addTCPLink(content, this.selectedLinkName, origin);
+            const visualPlaceholder = document.getElementById('tcp-visual-placeholder')?.value || 'sphere';
+            const result = URDFEditUtils.addTCPLink(content, this.selectedLinkName, { ...origin, visualPlaceholder });
             this.resetDeleteConfirmation();
             this.pendingSelectLinkName = result.linkName;
             await this.codeEditorManager.replaceContentAndReload(result.xml);
-            this.setStatus(`Added ${result.linkName} via fixed joint ${result.jointName} at xyz="${origin.xyz}" rpy="${origin.rpy}".`, 'success');
+            this.setStatus(`Added ${result.linkName} via fixed joint ${result.jointName} with ${visualPlaceholder} visual at xyz="${origin.xyz}" rpy="${origin.rpy}".`, 'success');
         } catch (error) {
             this.pendingSelectLinkName = null;
             this.setStatus(error.message, 'error');
