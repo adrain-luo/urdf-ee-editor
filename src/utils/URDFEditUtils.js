@@ -119,6 +119,15 @@ export class URDFEditUtils {
         return parts.join(' ');
     }
 
+    static tripletToNumbers(value, label) {
+        return this.assertTriplet(value, label).split(/\s+/).map(Number);
+    }
+
+    static formatNumber(value) {
+        if (Math.abs(value) < 1e-12) return '0';
+        return Number(value.toFixed(10)).toString();
+    }
+
     static appendMarkerMaterial(doc, visualEl) {
         const materialEl = doc.createElement('material');
         materialEl.setAttribute('name', 'editor_marker_blue');
@@ -130,13 +139,51 @@ export class URDFEditUtils {
         visualEl.appendChild(materialEl);
     }
 
-    static appendVisualPlaceholder(doc, linkEl, type = 'none') {
-        const visualType = String(type || 'none').toLowerCase();
-        if (visualType === 'none' || visualType === 'false') {
-            return;
+    static appendRodSegmentVisual(doc, linkEl, length) {
+        const rodLength = Number(length);
+        if (!Number.isFinite(rodLength) || rodLength <= 1e-9) {
+            return { added: false, skipped: true, kind: 'rod' };
         }
 
-        const supported = new Set(['box', 'cylinder', 'sphere', 'child-marker', 'tcp-marker']);
+        const visualEl = doc.createElement('visual');
+        visualEl.setAttribute('name', 'editor_rod_visual');
+
+        const originEl = doc.createElement('origin');
+        originEl.setAttribute('xyz', `${this.formatNumber(-rodLength / 2)} 0 0`);
+        originEl.setAttribute('rpy', '0 1.57079632679 0');
+
+        const geometryEl = doc.createElement('geometry');
+        const cylinderEl = doc.createElement('cylinder');
+        cylinderEl.setAttribute('radius', '0.006');
+        cylinderEl.setAttribute('length', this.formatNumber(rodLength));
+        geometryEl.appendChild(cylinderEl);
+
+        const materialEl = doc.createElement('material');
+        materialEl.setAttribute('name', 'editor_rod_gray');
+
+        const colorEl = doc.createElement('color');
+        colorEl.setAttribute('rgba', '0.4 0.4 0.4 1');
+        materialEl.appendChild(colorEl);
+
+        visualEl.appendChild(originEl);
+        visualEl.appendChild(geometryEl);
+        visualEl.appendChild(materialEl);
+        linkEl.appendChild(visualEl);
+
+        return { added: true, skipped: false, kind: 'rod', length: rodLength };
+    }
+
+    static appendVisualPlaceholder(doc, linkEl, type = 'none', options = {}) {
+        const visualType = String(type || 'none').toLowerCase();
+        if (visualType === 'none' || visualType === 'false') {
+            return { added: false, skipped: false, kind: 'none' };
+        }
+
+        if (visualType === 'child-marker' || visualType === 'rod') {
+            return this.appendRodSegmentVisual(doc, linkEl, options.rodLength);
+        }
+
+        const supported = new Set(['box', 'cylinder', 'sphere', 'tcp-marker']);
         if (!supported.has(visualType)) {
             throw new Error(`Unsupported visual placeholder: ${type}`);
         }
@@ -144,8 +191,8 @@ export class URDFEditUtils {
         const visualEl = doc.createElement('visual');
         visualEl.setAttribute('name', 'editor_marker_visual');
         const originEl = doc.createElement('origin');
-        const markerType = visualType === 'child-marker' ? 'cylinder' : visualType === 'tcp-marker' ? 'sphere' : visualType;
-        originEl.setAttribute('xyz', markerType === 'cylinder' ? '0.06 0 0' : '0 0 0');
+        const markerType = visualType === 'tcp-marker' ? 'sphere' : visualType;
+        originEl.setAttribute('xyz', '0 0 0');
         originEl.setAttribute('rpy', markerType === 'cylinder' ? '0 1.57079632679 0' : '0 0 0');
 
         const geometryEl = doc.createElement('geometry');
@@ -168,12 +215,14 @@ export class URDFEditUtils {
         visualEl.appendChild(geometryEl);
         this.appendMarkerMaterial(doc, visualEl);
         linkEl.appendChild(visualEl);
+
+        return { added: true, skipped: false, kind: markerType };
     }
 
-    static appendFixedChildLink(doc, robot, parentLinkName, jointName, childLinkName, xyz, rpy, visualPlaceholder = 'none') {
+    static appendFixedChildLink(doc, robot, parentLinkName, jointName, childLinkName, xyz, rpy, visualPlaceholder = 'none', visualOptions = {}) {
         const linkEl = doc.createElement('link');
         linkEl.setAttribute('name', childLinkName);
-        this.appendVisualPlaceholder(doc, linkEl, visualPlaceholder);
+        const visualInfo = this.appendVisualPlaceholder(doc, linkEl, visualPlaceholder, visualOptions);
 
         const jointEl = doc.createElement('joint');
         jointEl.setAttribute('name', jointName);
@@ -198,6 +247,8 @@ export class URDFEditUtils {
         robot.appendChild(doc.createTextNode('\n  '));
         robot.appendChild(jointEl);
         robot.appendChild(doc.createTextNode('\n'));
+
+        return visualInfo;
     }
 
     static addFixedChildLink(xmlContent, parentLinkName, options = {}) {
@@ -225,15 +276,28 @@ export class URDFEditUtils {
 
         const xyz = this.assertTriplet(options.xyz || '0 0 0', 'Origin xyz');
         const rpy = this.assertTriplet(options.rpy || '0 0 0', 'Origin rpy');
+        const [x, y, z] = this.tripletToNumbers(xyz, 'Origin xyz');
+        const rodLength = Math.hypot(x, y, z);
         const addVisualMarker = options.addVisualMarker !== false;
         const visualPlaceholder = addVisualMarker ? (options.visualPlaceholder || 'child-marker') : 'none';
 
-        this.appendFixedChildLink(doc, robot, parentLinkName, jointName, childLinkName, xyz, rpy, visualPlaceholder);
+        const visualInfo = this.appendFixedChildLink(
+            doc,
+            robot,
+            parentLinkName,
+            jointName,
+            childLinkName,
+            xyz,
+            rpy,
+            visualPlaceholder,
+            { rodLength }
+        );
 
         return {
             xml: this.serializeFormatted(doc, xmlContent),
             linkName: childLinkName,
-            jointName
+            jointName,
+            visualInfo
         };
     }
 
@@ -253,12 +317,13 @@ export class URDFEditUtils {
         const addVisualMarker = options.addVisualMarker === true;
         const visualPlaceholder = addVisualMarker ? (options.visualPlaceholder || 'tcp-marker') : 'none';
 
-        this.appendFixedChildLink(doc, robot, parentLinkName, jointName, tcpLinkName, xyz, rpy, visualPlaceholder);
+        const visualInfo = this.appendFixedChildLink(doc, robot, parentLinkName, jointName, tcpLinkName, xyz, rpy, visualPlaceholder);
 
         return {
             xml: this.serializeFormatted(doc, xmlContent),
             linkName: tcpLinkName,
-            jointName
+            jointName,
+            visualInfo
         };
     }
 }

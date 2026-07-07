@@ -162,6 +162,8 @@ export class EndEffectorEditorController {
                 previewId: 'child-pose-preview',
                 distanceId: 'child-distance-mm',
                 angleId: 'child-angle-deg',
+                segmentLengthId: 'child-segment-length',
+                segmentRpyId: 'child-segment-rpy',
                 directPanelId: 'child-direct-panel',
                 guidedPanelId: 'child-guided-panel'
             },
@@ -196,6 +198,8 @@ export class EndEffectorEditorController {
             button.addEventListener('click', () => this.applyGuidedPoseStep(button));
         });
 
+        document.getElementById('child-apply-segment-btn')?.addEventListener('click', () => this.applyGuidedSegment());
+
         this.updatePosePreview('child');
         this.updatePosePreview('tcp');
     }
@@ -214,7 +218,7 @@ export class EndEffectorEditorController {
 
     formatPoseNumber(value) {
         if (Math.abs(value) < 1e-12) return '0';
-        return Number(value.toFixed(6)).toString();
+        return Number(value.toFixed(8)).toString();
     }
 
     formatTriplet(values) {
@@ -305,6 +309,28 @@ export class EndEffectorEditorController {
         } catch (error) {
             this.setStatus(error.message, 'error');
             this.updatePosePreview(target);
+        }
+    }
+
+    applyGuidedSegment() {
+        const config = this.getPoseConfig('child');
+        if (!config) return;
+
+        try {
+            const length = this.readPositiveStep(config.segmentLengthId, 'Segment length');
+            const rpyInput = document.getElementById(config.segmentRpyId);
+            const rpy = this.parseTripletValue(rpyInput?.value || '0 0 0', 'Segment rpy');
+            const [, pitch, yaw] = rpy;
+            const xyz = [
+                length * Math.cos(yaw) * Math.cos(pitch),
+                length * Math.sin(yaw) * Math.cos(pitch),
+                -length * Math.sin(pitch)
+            ];
+
+            this.writePoseValues('child', xyz, rpy);
+            this.setStatus(`Applied segment pose: xyz ${this.formatTriplet(xyz)} | rpy ${this.formatTriplet(rpy)}.`, 'success');
+        } catch (error) {
+            this.setStatus(error.message, 'error');
         }
     }
 
@@ -619,7 +645,11 @@ export class EndEffectorEditorController {
             this.resetDeleteConfirmation();
             this.pendingSelectLinkName = result.linkName;
             await this.codeEditorManager.replaceContentAndReload(result.xml);
-            this.setStatus(`Added child link ${result.linkName} via fixed joint ${result.jointName}${inputs.addVisualMarker ? ' with visual marker.' : '.'}`, 'success');
+            if (inputs.addVisualMarker && result.visualInfo?.skipped) {
+                this.setStatus(`Added child link ${result.linkName}. Zero-length child segment: rod visual skipped.`, 'warning');
+            } else {
+                this.setStatus(`Added child link ${result.linkName} via fixed joint ${result.jointName}${inputs.addVisualMarker ? ' with rod visual.' : '.'}`, 'success');
+            }
         } catch (error) {
             this.pendingSelectLinkName = null;
             this.setStatus(error.message, 'error');

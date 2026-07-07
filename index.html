@@ -3316,10 +3316,10 @@
                     </div>
                     <label class="editor-checkbox-row">
                         <input type="checkbox" id="child-add-visual-marker" checked />
-                        <span>Add visual marker (+X cylinder)</span>
+                        <span>Add rod visual</span>
                     </label>
                     <div class="pose-mode-tabs">
-                        <button class="pose-mode-btn active" id="child-pose-direct-btn" data-pose-target="child" data-pose-mode="direct">Direct pose</button>
+                        <button class="pose-mode-btn active" id="child-pose-direct-btn" data-pose-target="child" data-pose-mode="direct">Direct pose (best-effort)</button>
                         <button class="pose-mode-btn" id="child-pose-guided-btn" data-pose-target="child" data-pose-mode="guided">Guided pose</button>
                     </div>
                     <div class="pose-direct-panel" id="child-direct-panel">
@@ -3337,7 +3337,12 @@
                             <input id="child-distance-mm" value="10" aria-label="Child translation distance mm" />
                             <label for="child-angle-deg">rotate deg</label>
                             <input id="child-angle-deg" value="90" aria-label="Child rotation angle deg" />
+                            <label for="child-segment-length">segment m</label>
+                            <input id="child-segment-length" value="0.052" aria-label="Child segment length meters" />
+                            <label for="child-segment-rpy">segment rpy</label>
+                            <input id="child-segment-rpy" value="0 0 0" aria-label="Child segment rpy radians" />
                         </div>
+                        <button class="editor-action-btn" id="child-apply-segment-btn">Apply segment</button>
                         <div class="pose-button-grid">
                             <button class="pose-step-btn" data-pose-target="child" data-pose-axis="x" data-pose-sign="1">+X</button>
                             <button class="pose-step-btn" data-pose-target="child" data-pose-axis="y" data-pose-sign="1">+Y</button>
