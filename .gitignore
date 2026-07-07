@@ -28,3 +28,7 @@ Thumbs.db
 
 # Cache
 .cache/
+
+# Large local sample robot descriptions
+g1_d_description/
+**/g1_d_description/
