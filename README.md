@@ -2,6 +2,8 @@
 
 # URDF 末端执行器编辑器
 
+[English](./README_EN.md)
+
 一个轻量级 Web URDF 末端执行器编辑器，用于裁剪机器人末端子树、添加固定连杆/TCP，并导出修改后的 URDF。
 
 本项目基于 [fan-ziqi/robot_viewer](https://github.com/fan-ziqi/robot_viewer) 继续开发，保留上游 Apache-2.0 License 与 attribution。当前重点是让已有机器人 URDF + meshes 能稳定导入、查看和进行末端链路编辑。
