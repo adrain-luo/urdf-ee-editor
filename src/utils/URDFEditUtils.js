@@ -277,7 +277,11 @@ export class URDFEditUtils {
         const xyz = this.assertTriplet(options.xyz || '0 0 0', 'Origin xyz');
         const rpy = this.assertTriplet(options.rpy || '0 0 0', 'Origin rpy');
         const [x, y, z] = this.tripletToNumbers(xyz, 'Origin xyz');
-        const rodLength = Math.hypot(x, y, z);
+        const requestedRodLength = options.rodLength === undefined || options.rodLength === null ? null : Number(options.rodLength);
+        if (requestedRodLength !== null && (!Number.isFinite(requestedRodLength) || requestedRodLength < 0)) {
+            throw new Error('Rod length must be a non-negative number.');
+        }
+        const rodLength = requestedRodLength === null ? Math.hypot(x, y, z) : requestedRodLength;
         const addVisualMarker = options.addVisualMarker !== false;
         const visualPlaceholder = addVisualMarker ? (options.visualPlaceholder || 'child-marker') : 'none';
 

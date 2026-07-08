@@ -3319,37 +3319,34 @@
                         <span>Add rod visual</span>
                     </label>
                     <div class="pose-mode-tabs">
-                        <button class="pose-mode-btn active" id="child-pose-direct-btn" data-pose-target="child" data-pose-mode="direct">Direct pose (best-effort)</button>
-                        <button class="pose-mode-btn" id="child-pose-guided-btn" data-pose-target="child" data-pose-mode="guided">Guided pose</button>
+                        <button class="pose-mode-btn" id="child-pose-direct-btn" data-pose-target="child" data-pose-mode="direct">Direct pose</button>
+                        <button class="pose-mode-btn active" id="child-pose-guided-btn" data-pose-target="child" data-pose-mode="guided">Guided pose</button>
                     </div>
-                    <div class="pose-direct-panel" id="child-direct-panel">
+                    <div class="pose-direct-panel hidden" id="child-direct-panel">
                         <div class="editor-input-grid">
                             <label for="child-origin-xyz">xyz m</label>
                             <input id="child-origin-xyz" value="0 0 0" aria-label="Child origin xyz" />
                             <label for="child-origin-rpy">rpy rad</label>
                             <input id="child-origin-rpy" value="0 0 0" aria-label="Child origin rpy" />
                         </div>
+                        <div class="pose-preview">Direct pose uses raw URDF origin xyz/rpy. Use Guided pose for rotate-then-translate segment modeling.</div>
                     </div>
-                    <div class="pose-guided-panel" id="child-guided-panel">
+                    <div class="pose-guided-panel active" id="child-guided-panel">
                         <div class="pose-preview" id="child-pose-preview">xyz 0 0 0 | rpy 0 0 0</div>
                         <div class="editor-input-grid">
                             <label for="child-distance-mm">move mm</label>
-                            <input id="child-distance-mm" value="10" aria-label="Child translation distance mm" />
+                            <input id="child-distance-mm" value="100" aria-label="Child segment length step mm" />
                             <label for="child-angle-deg">rotate deg</label>
-                            <input id="child-angle-deg" value="90" aria-label="Child rotation angle deg" />
+                            <input id="child-angle-deg" value="45" aria-label="Child segment rotation step deg" />
                             <label for="child-segment-length">segment m</label>
-                            <input id="child-segment-length" value="0.052" aria-label="Child segment length meters" />
+                            <input id="child-segment-length" value="0" aria-label="Child segment length meters" />
                             <label for="child-segment-rpy">segment rpy</label>
                             <input id="child-segment-rpy" value="0 0 0" aria-label="Child segment rpy radians" />
                         </div>
                         <button class="editor-action-btn" id="child-apply-segment-btn">Apply segment</button>
                         <div class="pose-button-grid">
-                            <button class="pose-step-btn" data-pose-target="child" data-pose-axis="x" data-pose-sign="1">+X</button>
-                            <button class="pose-step-btn" data-pose-target="child" data-pose-axis="y" data-pose-sign="1">+Y</button>
-                            <button class="pose-step-btn" data-pose-target="child" data-pose-axis="z" data-pose-sign="1">+Z</button>
-                            <button class="pose-step-btn" data-pose-target="child" data-pose-axis="x" data-pose-sign="-1">-X</button>
-                            <button class="pose-step-btn" data-pose-target="child" data-pose-axis="y" data-pose-sign="-1">-Y</button>
-                            <button class="pose-step-btn" data-pose-target="child" data-pose-axis="z" data-pose-sign="-1">-Z</button>
+                            <button class="pose-step-btn" data-pose-target="child" data-segment-length-step="1">+Segment</button>
+                            <button class="pose-step-btn" data-pose-target="child" data-segment-length-step="-1">-Segment</button>
                         </div>
                         <div class="pose-button-grid">
                             <button class="pose-step-btn" data-pose-target="child" data-pose-rotation="roll" data-pose-sign="1">+Roll</button>

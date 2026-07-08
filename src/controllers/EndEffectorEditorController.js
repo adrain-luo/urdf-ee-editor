@@ -189,12 +189,18 @@ export class EndEffectorEditorController {
                 document.getElementById(id)?.addEventListener('input', () => this.updatePosePreview(target));
             });
 
+            if (target === 'child') {
+                [config.segmentLengthId, config.segmentRpyId].forEach(id => {
+                    document.getElementById(id)?.addEventListener('input', () => this.syncGuidedSegmentToDirect({ showStatus: false }));
+                });
+            }
+
             document.querySelectorAll(`[data-pose-target="${target}"][data-pose-mode]`).forEach(button => {
                 button.addEventListener('click', () => this.setPoseMode(target, button.dataset.poseMode));
             });
         });
 
-        document.querySelectorAll('[data-pose-target][data-pose-axis], [data-pose-target][data-pose-rotation]').forEach(button => {
+        document.querySelectorAll('[data-pose-target][data-pose-axis], [data-pose-target][data-pose-rotation], [data-pose-target][data-segment-length-step]').forEach(button => {
             button.addEventListener('click', () => this.applyGuidedPoseStep(button));
         });
 
@@ -202,6 +208,7 @@ export class EndEffectorEditorController {
 
         this.updatePosePreview('child');
         this.updatePosePreview('tcp');
+        this.syncGuidedSegmentToDirect({ showStatus: false });
     }
 
     parseTripletValue(value, label) {
@@ -250,6 +257,22 @@ export class EndEffectorEditorController {
         this.updatePosePreview(target);
     }
 
+    readNonNegativeNumber(inputId, label) {
+        const input = document.getElementById(inputId);
+        const value = Number(input?.value);
+        if (!Number.isFinite(value) || value < 0) {
+            throw new Error(`${label} must be a non-negative number.`);
+        }
+        return value;
+    }
+
+    writeNumberInput(inputId, value) {
+        const input = document.getElementById(inputId);
+        if (input) {
+            input.value = this.formatPoseNumber(value);
+        }
+    }
+
     updatePosePreview(target) {
         const config = this.getPoseConfig(target);
         const preview = config ? document.getElementById(config.previewId) : null;
@@ -275,6 +298,10 @@ export class EndEffectorEditorController {
 
         document.getElementById(config.directPanelId)?.classList.toggle('hidden', mode !== 'direct');
         document.getElementById(config.guidedPanelId)?.classList.toggle('active', mode === 'guided');
+        if (target === 'child' && mode === 'guided') {
+            this.syncGuidedSegmentToDirect({ showStatus: false });
+            return;
+        }
         this.updatePosePreview(target);
     }
 
@@ -294,6 +321,25 @@ export class EndEffectorEditorController {
         if (!config) return;
 
         try {
+            if (target === 'child') {
+                if (button.dataset.segmentLengthStep) {
+                    const lengthSign = Number(button.dataset.segmentLengthStep || '1');
+                    const length = this.readNonNegativeNumber(config.segmentLengthId, 'Segment length');
+                    const distanceM = this.readPositiveStep(config.distanceId, 'Segment length step') / 1000;
+                    this.writeNumberInput(config.segmentLengthId, Math.max(0, length + lengthSign * distanceM));
+                }
+                if (button.dataset.poseRotation) {
+                    const rpyInput = document.getElementById(config.segmentRpyId);
+                    const rpy = this.parseTripletValue(rpyInput?.value || '0 0 0', 'Segment rpy');
+                    const angleRad = this.readPositiveStep(config.angleId, 'Rotation angle') * Math.PI / 180;
+                    const rotationIndex = { roll: 0, pitch: 1, yaw: 2 }[button.dataset.poseRotation];
+                    rpy[rotationIndex] += sign * angleRad;
+                    if (rpyInput) rpyInput.value = this.formatTriplet(rpy);
+                }
+                this.syncGuidedSegmentToDirect({ showStatus: false });
+                return;
+            }
+
             const { xyz, rpy } = this.readPoseValues(target);
             if (button.dataset.poseAxis) {
                 const distanceM = this.readPositiveStep(config.distanceId, 'Translation distance') / 1000;
@@ -312,26 +358,42 @@ export class EndEffectorEditorController {
         }
     }
 
-    applyGuidedSegment() {
+    computeSegmentPose(length, rpy) {
+        const [, pitch, yaw] = rpy;
+        return {
+            xyz: [
+                length * Math.cos(yaw) * Math.cos(pitch),
+                length * Math.sin(yaw) * Math.cos(pitch),
+                -length * Math.sin(pitch)
+            ],
+            rpy
+        };
+    }
+
+    syncGuidedSegmentToDirect({ showStatus = true } = {}) {
         const config = this.getPoseConfig('child');
         if (!config) return;
 
         try {
-            const length = this.readPositiveStep(config.segmentLengthId, 'Segment length');
+            const length = this.readNonNegativeNumber(config.segmentLengthId, 'Segment length');
             const rpyInput = document.getElementById(config.segmentRpyId);
             const rpy = this.parseTripletValue(rpyInput?.value || '0 0 0', 'Segment rpy');
-            const [, pitch, yaw] = rpy;
-            const xyz = [
-                length * Math.cos(yaw) * Math.cos(pitch),
-                length * Math.sin(yaw) * Math.cos(pitch),
-                -length * Math.sin(pitch)
-            ];
+            const { xyz } = this.computeSegmentPose(length, rpy);
 
             this.writePoseValues('child', xyz, rpy);
-            this.setStatus(`Applied segment pose: xyz ${this.formatTriplet(xyz)} | rpy ${this.formatTriplet(rpy)}.`, 'success');
+            if (showStatus) {
+                this.setStatus(`Applied segment pose: xyz ${this.formatTriplet(xyz)} | rpy ${this.formatTriplet(rpy)}.`, 'success');
+            }
         } catch (error) {
-            this.setStatus(error.message, 'error');
+            if (showStatus) {
+                this.setStatus(error.message, 'error');
+            }
+            this.updatePosePreview('child');
         }
+    }
+
+    applyGuidedSegment() {
+        this.syncGuidedSegmentToDirect({ showStatus: true });
     }
 
     showPanel() {
@@ -626,9 +688,28 @@ export class EndEffectorEditorController {
         const jointName = document.getElementById('child-joint-name')?.value?.trim() || '';
         const linkName = document.getElementById('child-link-name')?.value?.trim() || '';
         const addVisualMarker = document.getElementById('child-add-visual-marker')?.checked !== false;
-        const origin = this.readTripletInputs('child-origin-xyz', 'child-origin-rpy', 'Child link origin');
+        const config = this.getPoseConfig('child');
+        const guidedPanel = config ? document.getElementById(config.guidedPanelId) : null;
+        const isGuidedMode = guidedPanel?.classList.contains('active') === true;
+        let origin;
+        let rodLength;
 
-        return { jointName, linkName, addVisualMarker, ...origin };
+        if (isGuidedMode && config) {
+            const length = this.readNonNegativeNumber(config.segmentLengthId, 'Segment length');
+            const rpyInput = document.getElementById(config.segmentRpyId);
+            const segmentRpy = this.parseTripletValue(rpyInput?.value || '0 0 0', 'Segment rpy');
+            const segmentPose = this.computeSegmentPose(length, segmentRpy);
+            this.writePoseValues('child', segmentPose.xyz, segmentPose.rpy);
+            origin = {
+                xyz: this.formatTriplet(segmentPose.xyz),
+                rpy: this.formatTriplet(segmentPose.rpy)
+            };
+            rodLength = length;
+        } else {
+            origin = this.readTripletInputs('child-origin-xyz', 'child-origin-rpy', 'Child link origin');
+        }
+
+        return { jointName, linkName, addVisualMarker, rodLength, ...origin };
     }
 
     async addChildLink() {
