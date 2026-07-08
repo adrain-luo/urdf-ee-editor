@@ -82,7 +82,7 @@ export const translations = {
         'dropHint': '拖拽 URDF 文件或包含 meshes 的模型文件夹到页面任意位置',
         'dropHintSub': '支持 URDF, Xacro, MJCF 格式<br>支持拖拽完整描述包文件夹以加载 mesh 文件',
         'graphHint': '拖动: 移动 | 滚轮: 缩放 | 右键: 隐藏/显示 | Ctrl+左键: 测量',
-        'copyright': '© 2025 范子琦 版权所有。',
+        'copyright': 'URDF End-Effector Editor',
 
         // 模型信息
         'type': '类型',
@@ -205,7 +205,7 @@ export const translations = {
         'dropHint': 'Drag and drop a URDF file or a model folder with meshes anywhere',
         'dropHintSub': 'Supports URDF, Xacro, MJCF formats<br>Supports complete description folders for mesh loading',
         'graphHint': 'Drag: Move | Scroll: Zoom | Right-click: Hide/Show | Ctrl+Click: Measure',
-        'copyright': '© 2025 Ziqi Fan. All rights reserved.',
+        'copyright': 'URDF End-Effector Editor',
 
         // Model info
         'type': 'Type',

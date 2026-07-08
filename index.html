@@ -39,6 +39,9 @@
             --blur-amount: 24px;
             --saturation: 180%;
             --spring: cubic-bezier(0.4, 0, 0.2, 1);
+            --panel-edge-gap: 20px;
+            --panel-gap: 20px;
+            --panel-width: 280px;
         }
 
         [data-theme="light"] {
@@ -199,8 +202,8 @@
         /* File list floating panel */
         #floating-files-panel {
             top: 80px;
-            left: 20px;
-            width: 360px;
+            left: var(--panel-edge-gap);
+            width: var(--panel-width);
             height: 340px;
             transition: all 0.4s var(--spring);
             display: flex;
@@ -220,8 +223,8 @@
         /* Joint control floating panel */
         #floating-joints-panel {
             top: calc(80px + 340px + 20px);
-            left: 20px;
-            width: 360px;
+            left: var(--panel-edge-gap);
+            width: var(--panel-width);
             height: calc(100vh - 80px - 340px - 40px);
             transition: all 0.4s var(--spring);
         }
@@ -1311,16 +1314,16 @@
         /* Model tree floating panel */
         #floating-model-tree {
             top: 80px;
-            left: calc(100vw - 360px - 20px);
-            width: 360px;
+            left: calc(100vw - var(--panel-width) - var(--panel-edge-gap));
+            width: var(--panel-width);
             height: 340px;
             transition: all 0.4s var(--spring);
         }
 
         #floating-editor-panel {
             top: calc(80px + 340px + 20px);
-            left: calc(100vw - 360px - 20px);
-            width: 360px;
+            left: calc(100vw - var(--panel-edge-gap) - var(--panel-width) - var(--panel-gap) - var(--panel-width));
+            width: var(--panel-width);
             height: 720px;
             transition: all 0.4s var(--spring);
         }
@@ -2808,8 +2811,8 @@
         /* Code editor panel */
         #code-editor-panel {
             top: calc(80px + 340px + 20px);
-            left: calc(100vw - 360px - 20px);
-            width: 360px;
+            left: calc(100vw - var(--panel-width) - var(--panel-edge-gap));
+            width: var(--panel-width);
             height: calc(100vh - 80px - 340px - 40px);
             display: none;
             transition: all 0.4s var(--spring);
